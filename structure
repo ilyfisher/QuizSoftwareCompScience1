@@ -1,0 +1,528 @@
+#include<iostream>
+#include<fstream>
+#include<string>
+#include<sstream>
+using namespace std;
+/* Author:
+   UserId #: c1010b04
+   Creation Date:
+
+   Course:   CISP 1010 V01
+   File name: quizappif.cpp
+
+   Purpose:To give a variety of quiz questions to user
+   Version 2 changes:
+   Version 3 changes:
+   Test Cases:
+*/
+
+//Player structure
+struct Players {
+// Three attributes: Name of the player, Score of the player, Level of the quiz
+	string name;
+	int score;
+	string level;
+};
+
+//QuizQuestion structure
+struct QuizQuestions
+{
+	// typeOfQuestion to store question's type
+	string typeOfQuestion;
+	// The real question 
+	string question;
+	//The following  3 will be used for available options
+	//In case of MCQ's all of them will be used while in case of
+	//fill in the blanks and True or False only one of them will be used
+	string optionsA;
+	string optionsB;
+	string optionsC;
+	// the below one will be used to store correct answer
+	string correctAns;
+	//This one to store the answer that user will  enter
+	string userAnswer;
+};
+
+/* Function to read in a file to a special structure
+** Reads a document with this format
+** First line: Number of questions
+** Type of question: (M for multiple choice, T for true/false, type your own)
+** Options
+** Correct choice in A,B,C for multiple choice and T or F for true or false
+** Pre-conditions inputs – a file must exist in the correct location with the correct file name 
+** and a structure as well as the size of said array structure is given
+** Post-conditions outputs – reads in a file (the quiz) correctly to a structure
+*/
+void fileReader(string fileName, QuizQuestions quizArr[], int sizeOfArr)
+{
+	//ifstream object to store file for reading
+	ifstream fileReader(fileName);
+	//Temporary variables to store data temporarily
+	string temp;
+	string currentLine;
+	string question;
+	string options;
+	string correctAns;
+	string userAnswer;
+	int questionNumber = 0;
+	string waiste;
+
+	cout<<"Started reading in quiz file..."<<"\n\n";
+
+
+	//Skips the first line after reading question number previously
+	getline(fileReader,waiste);
+
+	//Reads in file to data structure
+	while (getline(fileReader, currentLine)) {
+		//if condition that will break this while loop
+		//if the iteration number is more than or equal to size of Question array
+		if (questionNumber >= sizeOfArr) {
+			break;
+		}
+
+		// In the file sequence the first line after a smart iteration will be
+		// the Type of question M,T or F , that value to this specific index of the array
+		
+		//Trims off new line character at the end and stores the rest in the structure
+		currentLine = currentLine.substr(0, currentLine.size()-1);
+
+		quizArr[questionNumber].typeOfQuestion = currentLine;
+
+
+
+		//M means its a Multiple choice 
+		if (currentLine=="M") {
+			//if the the question is M then there will be
+			// three options after the question 
+
+			// reading a setting question
+			getline(fileReader, question);
+			quizArr[questionNumber].question = question;
+
+			//Reading those options one by one and setting to 
+			// either As  option A , B or C
+			getline(fileReader, options);
+			//Reading and setting option A
+
+			quizArr[questionNumber].optionsA = options;
+			getline(fileReader, options);
+			//Reading and setting option B
+
+			quizArr[questionNumber].optionsB = options;
+			getline(fileReader, options);
+			//Reading and setting option B
+			quizArr[questionNumber].optionsC = options;
+
+			getline(fileReader, correctAns);
+			//reading and filling correct ans removing trailing new line character
+			correctAns = correctAns.substr(0, correctAns.size()-1);
+			quizArr[questionNumber].correctAns = correctAns;
+
+		}else if (currentLine == "T") {//T means its a True or False
+			/*
+			if the question is True or False then there will be just 
+			one question and on the next line it will have the
+			correct option
+			*/
+
+			//reading and filling question
+			getline(fileReader, question);
+			quizArr[questionNumber].question = question;
+			
+			//reading and filling correct ans removing trailing new line character
+			getline(fileReader, correctAns);
+			correctAns = correctAns.substr(0, correctAns.size()-1);
+			quizArr[questionNumber].correctAns = correctAns;
+
+
+		}else if (currentLine == "F") {//F means its a Fill in the blanks
+			/*
+			if the question type is F then it menas 
+			its a fill in blanks and there will be only
+			one question and one the next line
+			the correct answer
+			*/
+
+			//Setting and filling the question
+			getline(fileReader, question);
+			quizArr[questionNumber].question = question;
+
+			//reading and filling correct ans removing trailing new line character
+			getline(fileReader, correctAns);
+			correctAns = correctAns.substr(0, correctAns.size()-1);
+			quizArr[questionNumber].correctAns = correctAns;
+		}//end of Question types
+
+	 	//While loop file reading counter
+		questionNumber++;
+	}//end of while loop
+
+	cout<<"Finished reading in file"<<"\n\n";
+
+
+}//end of file reader function 
+
+
+/* Counts the total number of the questions
+** The following function is very useful it will be used for to count the total number of
+** of the questions in the the given quiz text file.
+** This function counts the correct number of questions to make an array
+** of type QuizQuestions to store quiz properly
+** Pre-conditions inputs – a filename must be given
+** Post-conditions outputs – returns the count of number of questions and checks if the file exists
+*/
+int NumberOfQuestionsInQuiz(string fileName) {
+	int numberOfQuestions=0;
+
+	try {
+		//Creating an object named fileReader using the file name as a string
+		ifstream fileReader(fileName);
+
+		//The first line of the file represents the number of questions in it
+		//It is being stored in a variable named numberOfQuestions
+		fileReader >> numberOfQuestions;
+	}catch(exception& ex){
+		cout << "file does not exists:(" << endl;
+		return -1;
+	}
+
+	//Returns the total number of questions in the quiz
+	return numberOfQuestions;
+}
+
+
+/* The quizManagementMethod() will accept an array of type QuizQuestions
+filled with question written in the selected quiz file ,
+and the second parameter is the size of that array
+//Pre-conditions inputs – a quiz structure must be defined and given and already have been populated as well as number of questions
+//Post-conditions outputs – quizes the contestant and returns their cummulative score
+*/
+int quizManagementMethod( QuizQuestions quizArr[], int sizeOfArr) {
+
+	int score = 0;
+	cout << "---------There is going to be " << sizeOfArr << " questions in total in this QUIZ-------- " << endl;
+
+	/*
+	the below for 
+	loop is very important and its going to iterate 
+	till sizeOfArr times  ,to dispaly the quiz to player in resonable 
+	format and , it will also ask the player to enter his/her answers,
+	and then store the user entered answers in the userAns field ,
+	Note( This function is just taking user input its not going to validate there answers  , there is another function for that purpose)
+	*/
+
+	int tempQnumber;
+	int x;
+	for (x = 0; x < sizeOfArr; x++) {
+		tempQnumber = x+1;
+		cout<<"\n<-------------Q"<<tempQnumber<< ": ";
+
+		cout<<quizArr[x].typeOfQuestion;//TAKE OUT LATER
+
+		//The below if checking if the Type of  the question on x-th index of the array is M then its mean that its a Multiple choice   question
+		if (quizArr[x].typeOfQuestion == "M") {
+
+			cout << " Multiple Choice Question ---------->" << endl;
+			//Printing the question on the console
+			cout << quizArr[x].question << endl;
+			//Printing all 3 opptons of it , one by one
+			cout << "A) " << quizArr[x].optionsA << endl;
+			cout << "B) " << quizArr[x].optionsB << endl;
+			cout << "C) " << quizArr[x].optionsC << endl;
+			//Asking the user to select his/her opptions
+			cout << "Please Select from A to C: ";
+			// taking ans from the user
+			cin >> quizArr[x].userAnswer;
+			//Checking if the selected option is correct the increasing 
+			//score by one
+			if (quizArr[x].userAnswer == quizArr[x].correctAns) {
+				score++;
+			}
+
+		}
+		//The below if checking if the Type of  the question on x-th index of the array is T then its mean that its a True or False   question
+
+		else if (quizArr[x].typeOfQuestion == "T") {
+
+			cout << "  True or  False  Question ---------->"<<endl;
+			// below asking the question to the user
+			cout << quizArr[x].question << endl;
+			// asking and taking the answer from the user either T or F
+			cout << "A. True "<<endl;
+			cout << "B. False " << endl;
+			cout << "Enter your response as A for True or B for False: ";
+			cin >> quizArr[x].userAnswer;
+			//Checking if the selected option is correct the increasing 
+			//score by one
+			if (quizArr[x].userAnswer == quizArr[x].correctAns) {
+				score++;
+			}
+		}
+		//The below if checking if the Type of  the question on x-th index of the array is F then its mean that its a fill in the blanks  question
+
+		else if (quizArr[x].typeOfQuestion == "F") {
+			cout << "  Fill In The Blanks Question ---------->" << endl;
+			// printing question on the console
+			cout << quizArr[x].question << endl;
+			//asking for the anser
+			cout << "please write your answer : ";
+			cin >> quizArr[x].userAnswer;
+			//Checking if the selected option is correct the increasing 
+			//score by one
+			if (quizArr[x].userAnswer == quizArr[x].correctAns) {
+				score++;
+			}
+
+		}
+		//Checking if the type of the question is not one from the above then its a undefind format
+		// for this programe because my programe is only desinged for three kinds of questions MCQ's ,Fill The blanks and T/F
+		else {
+			cout << quizArr[x].typeOfQuestion;
+			cout << "The format of this question is undefined :( " << endl;
+		}//end else
+		
+
+	}//end for loop
+
+	return score;
+}
+
+/* Calculates user skill level
+** Pre-conditions inputs – a quiz has been taken and a score achived and sent to this function
+** Post-conditions outputs – calulcates a level based on arbitrary ranges
+*/
+string calculateLevel(Players playerNames1, int numberOfQuestions){
+
+	playerNames1.score = (playerNames1.score * 100) / numberOfQuestions;
+	cout<<"\n\nYou scored "<<playerNames1.score<<"%!\n";
+	if(playerNames1.score>=95){
+		return "Master";
+	}else if(playerNames1.score>=80){
+		return "Advanced";
+	}else{
+		return "Beginner";
+	}
+}//end userLevel function
+
+/* Retrieves previous high score for user
+** Pre-conditions inputs – takes username 
+** Post-conditions outputs – retrieves user score   
+*/
+int retrieveGame(Players playerNames1){
+	string topScore="0";
+	//Read the file in
+	ifstream gameFileIn(playerNames1.name);
+
+	if(gameFileIn.is_open()){
+		//Get the first line
+		getline(gameFileIn, topScore);
+
+		// Close the file
+		gameFileIn.close();
+	}
+	return stoi(topScore);
+}//end function retrieveGame
+
+/* Saves new user game info to a file
+** Pre-conditions inputs – takes username and score obtained from taking the quiz
+** Post-conditions outputs – write the score to a file name as the user is named
+*/
+void saveGame(Players playerNames1){
+	int tempScore = 0;
+
+	//Checks if the user has a file and if their previous score is less
+	//If less then it writes the new high score to the file
+	tempScore=retrieveGame(playerNames1);
+
+	//Check if previous record exists
+	ifstream gameFileIn(playerNames1.name);
+	if(gameFileIn.is_open()){
+		gameFileIn.close();
+		cout<<"Your previous score was: " << tempScore <<". "<<endl;
+		//If it exists compare current score with past score
+		if(playerNames1.score >tempScore){
+			cout<<"You beat your previous score! \n";
+			cout<<"Saving new high score!\n\n";
+			ofstream gameFileOut(playerNames1.name);
+			gameFileOut << playerNames1.score;
+			gameFileOut.close();
+		}else{//Player did not beat their previous score or tied
+			cout<<"You did not beat your previous score! \n\n";
+		}
+	}else{//If previous record does not exist for this user
+		cout<<"This was your first attempt.\n\n"<<endl;
+		ofstream gameFileOut(playerNames1.name);
+		gameFileOut << playerNames1.score;
+		gameFileOut.close();
+	}
+}//end function saveGame
+
+/* Saves new user game info to a file
+** Pre-conditions inputs – takes score obtained from taking the quiz
+** Post-conditions outputs – write the score to a file named log
+*/
+void appendScore(Players playerNames1){
+	ofstream gameFileOut;
+	gameFileOut.open("log", std::ios_base::app);
+	gameFileOut << playerNames1.score;
+	gameFileOut << "\n";
+	gameFileOut.close();
+}
+
+
+/* Saves new user game info to a file
+** Pre-conditions inputs – takes score obtained from taking the quiz
+** Post-conditions outputs – write the score to a file named log
+*/
+void selectionSort(int *array, int size) {
+   int i, j, imin;
+   for(i = 0; i<size-1; i++) {
+      imin = i;   //get index of minimum data
+      for(j = i+1; j<size; j++)
+         if(array[j] < array[imin])
+            imin = j;
+         //placing in correct position
+         swap(array[i], array[imin]);
+   }
+}//end function selection sort algorithm
+
+
+/* Saves new user game info to a file
+** Pre-conditions inputs – takes score obtained from taking the quiz
+** Post-conditions outputs – write the score to a file named log
+*/
+void readScoreboard(){
+	const int maxLog= 1000;
+	int lineCounter=0; 
+	int topScores[maxLog]={0};
+	//Temp variable to hold line data
+    string line;
+
+	//Opens the file
+    ifstream scoreboard("log"); 
+  
+	//Check if file exists
+    if (scoreboard.is_open()) 
+    {
+		//Reads in file to array
+        while (!scoreboard.eof() ) //while the end of file is NOT reached
+        {
+            getline (scoreboard,line); //get one line from the file
+            topScores[lineCounter] = stoi(line);
+            lineCounter++;
+        }
+        scoreboard.close(); //closing the file
+    }
+    else {
+		cout << "File not available"; //if the file is not open output
+	}
+
+	selectionSort(topScores, maxLog);
+
+	cout<<"\n***Top Five Scores***"<<endl;
+	for(int x = 999; x>994; --x){
+		cout<<"Top score "<<1000-x<<": "<<topScores[x]<<" out of 10 questions!"<<endl;
+	}
+
+}//end function read log file
+
+
+int main() {
+
+	//TBD Highest five scores
+	
+	cout << "Welcome to Ily Fisher's METEORITE Quiz !" << endl;
+
+	readScoreboard();
+	//TBD:Get quantity of players
+	int numberOfPlayers=0;
+
+	//Get number of players in this game
+	cout<<"Enter number of players: "<<endl;
+	cin>>numberOfPlayers;
+	cout<<"There will be "<< numberOfPlayers << " players today! \n\n";
+
+	//Structure array
+	Players playerNames1[numberOfPlayers];
+
+	int gamesPlayed = 0;
+
+	//Holds the file name for the quiz to be taken
+	string quizName="catquiz.txt";
+
+	//Gets the file name from the user as a string
+	cout << "Enter file name: ";
+	cin >> quizName;
+
+	//Estimated level from the user
+	char level;
+
+	//To play a game for each player
+	do{
+		//Get each player's name
+		cout << "Enter player "<< gamesPlayed <<"'s name: ";
+		
+		//Enter character stuck in keyboard charcater 
+		//solved by using two successive cin
+		getline(cin,playerNames1[gamesPlayed].name);
+		getline(cin,playerNames1[gamesPlayed].name);
+
+
+		//Checks if player has played before
+		ifstream gameFileIn(playerNames1[gamesPlayed].name);
+		if(gameFileIn.is_open()){
+			//Welcomes them back and tells them their previous high score
+			cout<<"Welcome back "<<playerNames1[gamesPlayed].name<<endl;
+			gameFileIn.close();
+			cout<<"Your previous high score is: " << retrieveGame(playerNames1[gamesPlayed]) <<". "<<endl;	
+		}
+		
+		// ERROR CHECKING - below takes input for level and validating it
+		do{
+				cout << "Enter " << playerNames1[gamesPlayed].name << "'s estimated level: " << endl
+					<< "B for Beginner " << endl
+					<< "A for Advance " << endl
+					<< "M for Master " << endl
+					<< "Level : ";
+				cin>>level;
+				if (level != 'A' && level != 'B' && level != 'M'){
+					//Error output to use
+					cout << "<-------- Invalid Level :(  --------->" << endl;
+					cout << "<---------  Try Again ------------->" << endl;
+				}//end error output
+			} while(level != 'A' && level != 'B' && level != 'M'); //End while loop for level question
+
+		//NumberOfQuestionsInQuiz() gets the number of total questions given the file name
+		int numberOfQuestions = NumberOfQuestionsInQuiz(quizName);
+		if (numberOfQuestions == -1) {
+			cout << "file does not exists";
+		} else if (numberOfQuestions == 0) {
+			cout << "Sorry the quiz is empty :( ";
+		}else {
+			//Creates the quiz structure array variable and places questions in structure array
+			QuizQuestions* myQuizQuestions = new QuizQuestions[numberOfQuestions];
+
+			//Calls fileReader() to read file and display on console
+			fileReader(quizName, myQuizQuestions, numberOfQuestions);
+
+			//LAUNCHES THE QUIZ AND stores user score
+			playerNames1[gamesPlayed].score = quizManagementMethod(myQuizQuestions, numberOfQuestions);
+
+			//Calculate player's levels
+			playerNames1[gamesPlayed].level=calculateLevel(playerNames1[gamesPlayed], numberOfQuestions);
+
+			//Display user scores
+			cout<<"Congratulations you scored "<< playerNames1[gamesPlayed].score <<" out of 10 questions right!" <<endl;
+			//TBD append score to a file
+			appendScore(playerNames1[gamesPlayed]);
+
+			saveGame(playerNames1[gamesPlayed]);
+			cout <<playerNames1[gamesPlayed].name <<" you attained "<< playerNames1[gamesPlayed].level <<" level, please come play again!\n\n";
+		}//end of else that contains main code
+
+		gamesPlayed++;
+	}while(gamesPlayed < numberOfPlayers);
+
+	return 0;
+}
